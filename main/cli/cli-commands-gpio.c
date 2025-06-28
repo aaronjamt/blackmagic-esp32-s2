@@ -1,4 +1,5 @@
 #include <driver/gpio.h>
+#include <rom/gpio.h>
 #include "cli.h"
 #include "cli-args.h"
 #include "cli-commands.h"

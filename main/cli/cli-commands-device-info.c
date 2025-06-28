@@ -1,3 +1,5 @@
+#include <esp_chip_info.h>
+
 #include "cli.h"
 #include "cli-args.h"
 #include "cli-commands.h"

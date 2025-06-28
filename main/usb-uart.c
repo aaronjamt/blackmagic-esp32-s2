@@ -14,7 +14,7 @@
 #define USB_UART_RX_BUF_SIZE (1024)
 
 #define UART_RX_STREAM_BUFFER_SIZE_BYTES 1024 * 1024
-static uint8_t uart_rx_stream_storage[UART_RX_STREAM_BUFFER_SIZE_BYTES + 1] EXT_RAM_ATTR;
+static uint8_t uart_rx_stream_storage[UART_RX_STREAM_BUFFER_SIZE_BYTES + 1] EXT_RAM_BSS_ATTR;
 static StaticStreamBuffer_t uart_rx_stream_buffer_struct;
 static StreamBufferHandle_t uart_rx_stream = NULL;
 

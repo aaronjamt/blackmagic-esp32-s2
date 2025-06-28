@@ -1,8 +1,9 @@
 #include "soft-uart.h"
 #include <string.h>
 #include <freertos/portmacro.h>
-#include <esp32/clk.h>
+#include <esp_private/esp_clk.h>
 #include <driver/gpio.h>
+#include <rom/gpio.h>
 
 struct SoftUart {
     uint32_t baudrate;

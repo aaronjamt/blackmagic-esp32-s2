@@ -3,10 +3,11 @@
 #include "network.h"
 #include <esp_log.h>
 #include <esp_wifi.h>
+#include <esp_mac.h>
 #include <freertos/event_groups.h>
 #include <string.h>
 #include <m-string.h>
-#include <mdns.h>
+// #include <mdns.h>
 #include <lwip/apps/netbiosns.h>
 
 #define TAG "network"
@@ -34,11 +35,14 @@
 static WiFiMode wifi_mode = WiFiModeSTA;
 
 uint32_t network_get_ip(void) {
-    tcpip_adapter_ip_info_t ip_info;
+    esp_netif_ip_info_t ip_info;
+ 
     if(wifi_mode == WiFiModeSTA) {
-        tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+        esp_netif_t *sta_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+        esp_netif_get_ip_info(sta_netif, &ip_info);
     } else {
-        tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+        esp_netif_t *sta_netif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
+        esp_netif_get_ip_info(sta_netif, &ip_info);
     }
 
     return ip_info.ip.addr;

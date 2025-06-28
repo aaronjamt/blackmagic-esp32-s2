@@ -1,4 +1,6 @@
+#include "esp_rom_sys.h"
 #include <tusb.h>
+#include <esp_mac.h>
 #include "dap-link/dap-link-descriptors.h"
 #include "dual-cdc/dual-cdc-descriptors.h"
 #include "usb-glue.h"
@@ -169,8 +171,10 @@ bool tud_vendor_control_xfer_cb(
     return true;
 }
 
-void tud_vendor_rx_cb(uint8_t itf) {
+void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize) {
     (void)itf;
+    (void)buffer;
+    (void)bufsize;
     callback_dap_receive();
 }
 
@@ -239,21 +243,19 @@ void tud_cdc_line_coding_cb(uint8_t interface, cdc_line_coding_t const* p_line_c
 
 #include <driver/gpio.h>
 #include <driver/periph_ctrl.h>
-#include <hal/usb_hal.h>
 #include <soc/usb_periph.h>
-#include <esp_rom_gpio.h>
+#include <rom/gpio.h>
 #include <hal/gpio_ll.h>
-#include <delay.h>
 #include <esp_log.h>
 #include <esp_check.h>
 
-static void usb_hal_init_pins(usb_hal_context_t* usb) {
-    /* usb_periph_iopins currently configures USB_OTG as USB Device.
+static void usb_hal_init_pins() {
+    /* usb_periph_iopins currently co(nfigures USB_OTG as USB Device.
      * Introduce additional parameters in usb_hal_context_t when adding support
      * for USB Host.
      */
     for(const usb_iopin_dsc_t* iopin = usb_periph_iopins; iopin->pin != -1; ++iopin) {
-        if((usb->use_external_phy) || (iopin->ext_phy_only == 0)) {
+        if(iopin->ext_phy_only == 0) {
             esp_rom_gpio_pad_select_gpio(iopin->pin);
             if(iopin->is_output) {
                 esp_rom_gpio_connect_out_signal(iopin->pin, iopin->func, false, false);
@@ -266,10 +268,8 @@ static void usb_hal_init_pins(usb_hal_context_t* usb) {
             esp_rom_gpio_pad_unhold(iopin->pin);
         }
     }
-    if(!usb->use_external_phy) {
-        gpio_set_drive_capability(USBPHY_DM_NUM, GPIO_DRIVE_CAP_3);
-        gpio_set_drive_capability(USBPHY_DP_NUM, GPIO_DRIVE_CAP_3);
-    }
+    gpio_set_drive_capability(USBPHY_DM_NUM, GPIO_DRIVE_CAP_3);
+    gpio_set_drive_capability(USBPHY_DP_NUM, GPIO_DRIVE_CAP_3);
 }
 
 static void usb_hal_bus_reset() {
@@ -283,7 +283,8 @@ static void usb_hal_bus_reset() {
 
     gpio_set_level(USBPHY_DM_NUM, 0);
     gpio_set_level(USBPHY_DP_NUM, 0);
-    delay(100);
+    esp_rom_delay_us(1000*100);
+    // vTaskDelay(100 / portTICK_PERIOD_MS);
     gpio_set_level(USBPHY_DM_NUM, 1);
     gpio_set_level(USBPHY_DP_NUM, 1);
 }
@@ -339,9 +340,8 @@ esp_err_t usb_glue_init(USBDeviceType device_type) {
     periph_module_reset(PERIPH_USB_MODULE);
 
     // Initialize HAL layer
-    usb_hal_context_t hal = {.use_external_phy = false};
-    usb_hal_init(&hal);
-    usb_hal_init_pins(&hal);
+    // usb_ll_int_phy_enable();
+    usb_hal_init_pins();
 
     ESP_RETURN_ON_FALSE(tusb_init(), ESP_FAIL, TAG, "init TinyUSB failed");
 
