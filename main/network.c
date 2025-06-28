@@ -7,7 +7,7 @@
 #include <freertos/event_groups.h>
 #include <string.h>
 #include <m-string.h>
-// #include <mdns.h>
+#include <mdns.h>
 #include <lwip/apps/netbiosns.h>
 
 #define TAG "network"

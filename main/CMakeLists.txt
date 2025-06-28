@@ -29,7 +29,8 @@ set(INCLUDES
 )
 
 idf_component_register(SRCS ${SOURCES}
-    INCLUDE_DIRS ${INCLUDES})
+    INCLUDE_DIRS ${INCLUDES}
+    REQUIRES mdns)
 
 # Commit
 execute_process(
