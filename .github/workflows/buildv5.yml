@@ -1,0 +1,111 @@
+name: 'Build (ESP-IDF v5.0)'
+
+on:
+  push:
+    branches:
+      - v5
+    tags:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [ubuntu-latest]
+    steps:
+      - name: 'Store UID'
+        id: uid
+        run: |
+          echo id="$(id -u $USER)" >> $GITHUB_OUTPUT
+
+      - name: 'Wipe workspace'
+        run: find ./ -mount -maxdepth 1 -exec rm -rf {} \;
+
+      - name: 'Checkout code'
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: 'Checkout submodules'
+        run:
+          git submodule update --init --recursive --depth 1 --jobs "$(getconf _NPROCESSORS_ONLN)";
+
+      - name: 'Setup python'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 'Get commit details'
+        id: names
+        run: |
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            TYPE="pull"
+          elif [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+            TYPE="tag"
+          else
+            TYPE="other"
+          fi
+          python3 scripts/get_env.py "--event_file=${{ github.event_path }}" "--type=$TYPE"
+          echo "event_type=$TYPE" >> $GITHUB_OUTPUT
+
+      - name: 'Setup node'
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: components/svelte-portal
+
+      - name: 'Install node dependencies'
+        run: npm install
+        working-directory: components/svelte-portal
+
+      - name: 'Build captive portal'
+        run: npm run build
+        working-directory: components/svelte-portal
+
+      - name: 'Build firmware'
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.0
+          target: esp32s2
+
+      - name: 'Fix ownership'
+        uses: peter-murray/reset-workspace-ownership-action@v1
+        with:
+          user_id: ${{ steps.uid.outputs.id }}
+
+      - name: 'Make artifacts directory'
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        run: |
+          rm -rf artifacts
+          mkdir artifacts
+
+      - name: 'Move upload files'
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        run: |
+          mv build/bootloader/bootloader.bin artifacts/
+          mv build/partition_table/partition-table.bin artifacts/
+          mv build/blackmagic.bin artifacts/
+          cp scripts/flash_nix.sh artifacts/
+
+      - name: 'Generate flash.command file'
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        run: |
+          echo "esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32s2 write_flash $(tr '\n' ' ' < build/flash_args)" > artifacts/flash.command
+          sed -i 's/partition_table\///g' artifacts/flash.command
+          sed -i 's/bootloader\///g' artifacts/flash.command
+
+      - name: 'Generate archive'
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        run: |
+          mkdir -p "artifacts-archive"
+          tar -czvf artifacts-archive/blackmagic-firmware-s2-full-${SUFFIX}.tgz -C artifacts/ .
+
+      - name: 'Upload artifacts to update server'
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        run: |
+          FILES=$(for CUR in $(ls artifacts-archive/); do echo "-F files=@artifacts-archive/$CUR"; done)
+          curl --fail -L -H "Token: ${{ secrets.INDEXER_TOKEN }}" \
+              -F "branch=${BRANCH_NAME}" \
+              ${FILES[@]} \
+              "${{ secrets.INDEXER_URL }}"/blackmagic-firmware/uploadfiles
