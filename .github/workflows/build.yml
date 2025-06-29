@@ -99,13 +99,10 @@ jobs:
         if: ${{ !github.event.pull_request.head.repo.fork }}
         run: |
           mkdir -p "artifacts-archive"
-          tar -czvf artifacts-archive/blackmagic-firmware-s2-full-${SUFFIX}.tgz -C artifacts/ .
+          tar -czvf artifacts-archive/blackmagic-firmware-s2-full.tgz -C artifacts/ .
 
       - name: 'Upload artifacts to update server'
-        if: ${{ !github.event.pull_request.head.repo.fork }}
-        run: |
-          FILES=$(for CUR in $(ls artifacts-archive/); do echo "-F files=@artifacts-archive/$CUR"; done)
-          curl --fail -L -H "Token: ${{ secrets.INDEXER_TOKEN }}" \
-              -F "branch=${BRANCH_NAME}" \
-              ${FILES[@]} \
-              "${{ secrets.INDEXER_URL }}"/blackmagic-firmware/uploadfiles
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: blackmagic-firmware-s2-full.tgz
+          path: artifacts-archive/blackmagic-firmware-s2-full.tgz
