@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted,FlipperZeroShell]
+    runs-on: [ubuntu-latest]
     steps:
       - name: 'Store UID'
         id: uid
@@ -64,7 +64,10 @@ jobs:
         working-directory: components/svelte-portal
 
       - name: 'Build firmware'
-        uses: Intake-Health/esp-idf-ci-action@release-v4.4
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.4
+          target: esp32s2
 
       - name: 'Fix ownership'
         uses: peter-murray/reset-workspace-ownership-action@v1
