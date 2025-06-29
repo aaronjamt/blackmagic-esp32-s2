@@ -6,7 +6,7 @@
 	url = https://github.com/P-p-H-d/mlib.git
 [submodule "components/tinyusb/tinyusb"]
 	path = components/tinyusb/tinyusb
-	url = https://github.com/hathach/tinyusb
+	url = https://github.com/aaronjamt/tinyusb
 [submodule "components/dap-link/free-dap"]
 	path = components/dap-link/free-dap
 	url = https://github.com/ataradov/free-dap
