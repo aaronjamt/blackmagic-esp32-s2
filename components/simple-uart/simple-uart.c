@@ -1,11 +1,11 @@
 #include <driver/gpio.h>
+#include <driver/uart.h>
 #include <driver/periph_ctrl.h>
 #include <hal/uart_ll.h>
 #include <hal/uart_hal.h>
 
 #include <hal/gpio_hal.h>
 #include <esp_rom_gpio.h>
-#include <esp_clk_tree.h>
 #include <esp_private/gpio.h>
 #include <soc/uart_periph.h>
 
@@ -58,14 +58,14 @@ static void simple_uart_isr(void* arg);
 
 static void simple_uart_init_pins(uint8_t uart_num, int tx_pin_num, int rx_pin_num) {
     if(tx_pin_num >= 0) {
-        gpio_func_sel(GPIO_PIN_MUX_REG[tx_pin_num], PIN_FUNC_GPIO);
+        gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[tx_pin_num], PIN_FUNC_GPIO);
         gpio_set_level(tx_pin_num, 1);
         esp_rom_gpio_connect_out_signal(
             tx_pin_num, UART_PERIPH_SIGNAL(uart_num, SOC_UART_TX_PIN_IDX), 0, 0);
     }
 
     if(rx_pin_num >= 0) {
-        gpio_func_sel(GPIO_PIN_MUX_REG[rx_pin_num], PIN_FUNC_GPIO);
+        gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[rx_pin_num], PIN_FUNC_GPIO);
         gpio_set_pull_mode(rx_pin_num, GPIO_PULLUP_ONLY);
         gpio_set_direction(rx_pin_num, GPIO_MODE_INPUT);
         esp_rom_gpio_connect_in_signal(
@@ -194,7 +194,7 @@ void simple_uart_set_baud_rate(uint8_t uart_num, uint32_t baud_rate) {
     uint32_t sclk_freq;
 
     uart_hal_get_sclk(&(uart_context[uart_num].hal), &src_clk);
-    esp_clk_tree_src_get_freq_hz(src_clk, ESP_CLK_TREE_SRC_FREQ_PRECISION_CACHED, &sclk_freq);
+    uart_get_sclk_freq(src_clk, &sclk_freq);
 
     uart_hal_set_baudrate(UART_HAL(uart_num), baud_rate, sclk_freq);
 }

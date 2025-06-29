@@ -30,7 +30,7 @@ set(INCLUDES
 
 idf_component_register(SRCS ${SOURCES}
     INCLUDE_DIRS ${INCLUDES}
-    REQUIRES esp_wifi mlib driver mdns simple-uart esp_http_server esp_driver_ledc esp_driver_gpio blackmagic nvs_flash tinyusb svelte-portal json dap-link soft-uart)
+    REQUIRES esp_wifi mlib driver mdns simple-uart esp_http_server blackmagic nvs_flash tinyusb svelte-portal json dap-link soft-uart)
 
 # Commit
 execute_process(
